@@ -1,0 +1,105 @@
+---
+title: "7 Practice Web Scraping"
+author: "Juli Furjes"
+date: "2022-11-06"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+Clone the repository at https://github.com/Digital-Methods-HASS/WebscrapingPoliceKillings and depending on your familiarity with R, either
+
+1) adapt the web-scraping example to scrape homicide data from FBI site and produce a meaningful report on how homicide trends evolve around US in relation to this urban unrest
+or
+2) use the rvest library to scrape data of your interest (football statistics in Wikipedia?, gender representatives in different governments? global population by country in https://www.worldometers.info/world-population/population-by-country/ )
+or
+3) produce data visualisations that shed light on another interesting aspect of the police killing data
+
+Submit both the .rmd and the rendered .html files to your au###### github repository and paste link here.
+
+I chose Exercise 2, and I am using the following link: https://www.nwf.org/Educational-Resources/Wildlife-Guide/Mammals/Raccoon
+
+```{r}
+pacman::p_load(robotstxt)
+
+# checking whether scraping is allowed on that website
+paths_allowed(paths="https://www.nwf.org/Educational-Resources/Wildlife-Guide/Mammals/Raccoon")
+```
+
+```{r}
+library(rvest)
+
+# downloading the text from the website
+raccoon_html <- read_html("https://www.nwf.org/Educational-Resources/Wildlife-Guide/Mammals/Raccoon")
+
+# finding the name of the animal
+name <- raccoon_html %>% 
+  html_nodes("h2") %>% 
+  html_text2()
+name
+
+# only keeping the first occurrence from the H2 elements
+# (since that's the name of the animal)
+name <- name[1]
+
+# finding the latin name of the animal
+latin_name <- raccoon_html %>% 
+  html_nodes("p.large-subhead") %>% 
+  html_text2()
+latin_name
+
+# only keeping the first occurrence from the subheadings elements
+# (since that's the latin name of the animal)
+latin_name <- latin_name[1]
+
+# scraping the descriptions based on the class of the paragraph element
+all_text <- raccoon_html %>% 
+  html_nodes("div.bordered-container p") %>% 
+  html_text2()
+all_text
+
+# creating empty lists for our two variables
+titles <- list()
+descriptions <- list()
+
+# separating the titles and the descriptions within 'all_text')
+# since they are alternating, we can use a for loop
+for (x in 1:length(all_text)) {
+  if(x%%2){
+    titles <- append(titles, all_text[x])
+  } else {
+    descriptions <- append(descriptions, all_text[x])
+  }
+}
+
+titles
+descriptions
+
+# removing the lines which are not part of the actual article
+# because they are also mentioned within the same dividers
+titles <- titles[-c(6,7)]
+descriptions <- descriptions[-6]
+
+titles
+descriptions
+
+# this is another way to scrape the titles
+# this isdirectly from the page (based on the class of the paragraph element)
+title <- raccoon_html %>% 
+  html_nodes("p.bordered-container-title") %>% 
+  html_text2()
+title
+```
+
+```{r}
+# creating a dataframe out of the titles and descriptions
+raccoon_data = data.frame(unlist(titles),unlist(descriptions))
+
+# naming the columns
+names(raccoon_data) = c("titles","descriptions")
+
+# adding the name of the animal to the dataframe
+raccoon_data$animal_name <- name
+raccoon_data$latin_animal_name <- latin_name
+```
+
